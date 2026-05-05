@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Scoop - Pedidos</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- FONTES -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            rosa: '#E8899E',
+            rosinha: '#F4A6B5',
+            creme: '#FFF8F4',
+            marrom: '#5A3E3E'
+          },
+          fontFamily: {
+            titulo: ['Playfair Display', 'serif'],
+            corpo: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-creme font-corpo">
+
+  <!-- HEADER -->
+  <header class="fixed top-0 left-0 w-full bg-white shadow-sm border-b border-pink-100 px-8 py-4 flex items-center justify-between z-50">
+
+    <!-- ESQUERDA -->
+    <div class="flex items-center gap-4">
+
+      <img 
+        src="assets/images/banner.png" 
+        alt="Logo Scoop Sorveteria"
+        class="w-14 h-14 object-contain rounded-xl"
+      />
+
+      <div>
+        <h1 class="text-2xl font-titulo text-marrom">
+          Scoop Sorveteria
+        </h1>
+
+        <!-- STATUS -->
+        <div class="flex items-center gap-2 mt-1">
+          <span id="statusDot" class="w-2 h-2 rounded-full bg-red-400"></span>
+          <span id="statusText" class="text-sm text-gray-600">Offline</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIREITA -->
+    <div class="flex gap-3">
+
+      <button onclick="toggleStatus()"
+        id="statusBtn"
+        class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-full transition">
+        Ficar Online
+      </button>
+
+      <button onclick="carregarPedidos()"
+        class="bg-rosa hover:bg-rosinha text-white px-5 py-2 rounded-full transition">
+        Atualizar
+      </button>
+
+    </div>
+  </header>
+
+
+  <!-- CONTEÚDO -->
+  <div class="px-8 pb-10 mt-24">
+
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xl font-semibold text-marrom">
+        Pedidos Recebidos
+      </h3>
+
+      <span id="contador"
+        class="bg-rosa text-white px-4 py-1 rounded-full text-sm">
+        0 pedidos
+      </span>
+    </div>
+
+    <!-- LISTA -->
+    <div id="pedidosContainer"
+      class="grid gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+    </div>
+
+  </div>
+
+  <script>
+    function renderPedidos(pedidos) {
+      const container = document.getElementById("pedidosContainer");
+      const contador = document.getElementById("contador");
+
+      container.innerHTML = "";
+
+      if (pedidos.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full bg-red-100 border border-red-300 
+                      text-red-800 px-6 py-4 rounded-lg shadow-sm">
+            Nenhum pedido no momento 🍨
+          </div>
+        `;
+      }
+
+      pedidos.forEach(pedido => {
+        const card = document.createElement("div");
+
+        card.className = `
+          bg-white rounded-2xl p-4 shadow-sm
+          border border-pink-100
+        `;
+
+        card.innerHTML = `
+          <h3 class="text-rosa font-semibold text-lg mb-2">
+            Pedido #${pedido.id}
+          </h3>
+
+          <p class="text-sm text-gray-700">
+            <strong>Cliente:</strong> ${pedido.cliente}
+          </p>
+
+          <p class="text-sm text-gray-700 mt-1">
+            <strong>Itens:</strong> ${pedido.itens.join(", ")}
+          </p>
+        `;
+
+        container.appendChild(card);
+      });
+
+      contador.innerText = pedidos.length + " pedidos";
+    }
+
+    // MOCK (sem pedidos)
+    function mockPedidos() {
+      return [];
+    }
+
+    window.onload = () => {
+      renderPedidos(mockPedidos());
+    };
+
+    async function carregarPedidos() {
+      try {
+        const response = await fetch("https://sua-api.com/pedidos");
+        const pedidos = await response.json();
+        renderPedidos(pedidos);
+      } catch {
+        renderPedidos([]);
+      }
+    }
+
+    // ONLINE / OFFLINE
+    let online = false;
+
+    function toggleStatus() {
+      online = !online;
+
+      const dot = document.getElementById("statusDot");
+      const text = document.getElementById("statusText");
+      const btn = document.getElementById("statusBtn");
+
+      if (online) {
+        dot.classList.remove("bg-red-400");
+        dot.classList.add("bg-green-400");
+
+        text.innerText = "Online";
+        btn.innerText = "Ficar Offline";
+        btn.classList.remove("bg-gray-400");
+        btn.classList.add("bg-green-500");
+      } else {
+        dot.classList.remove("bg-green-400");
+        dot.classList.add("bg-red-400");
+
+        text.innerText = "Offline";
+        btn.innerText = "Ficar Online";
+        btn.classList.remove("bg-green-500");
+        btn.classList.add("bg-gray-400");
+      }
+    }
+  </script>
+
+</body>
+</html>

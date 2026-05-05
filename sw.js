@@ -3,11 +3,11 @@ const ASSETS = [
     './',
     './index.html',
     './manifest.json',
-    './images/logo.png',
+    './assets/images/logo.png',
     './images/logo64.png',
     './images/logo512.png',
-    './images/banner.png',
-    './images/whatsapp.png'
+    './assets/images/banner.png',
+    './assets/images/whatsapp.png'
 ];
 
 self.addEventListener('install', event => {

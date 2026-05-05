@@ -8,8 +8,8 @@
     "description": "Cardápio digital Scoop Sorveteria",
     "icons": [
         {
-            "src": "./images/logo64.png",
-            "sizes": "192x192",
+            "src": "./images/logo512.png",
+            "sizes": "512x512",
             "type": "image/png",
             "purpose": "any"
         },
