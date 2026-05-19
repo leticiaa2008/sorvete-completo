@@ -96,72 +96,258 @@
   </div>
 
   <script>
+
+    // =========================
+    // URL DA API
+    // =========================
+    const URL_API = "https://sorvete-back-certo.vercel.app/api/pedidos";
+
+
+    // =========================
+    // RENDERIZAR PEDIDOS
+    // =========================
     function renderPedidos(pedidos) {
+
       const container = document.getElementById("pedidosContainer");
       const contador = document.getElementById("contador");
 
       container.innerHTML = "";
 
+      // SEM PEDIDOS
       if (pedidos.length === 0) {
+
         container.innerHTML = `
           <div class="col-span-full bg-red-100 border border-red-300 
                       text-red-800 px-6 py-4 rounded-lg shadow-sm">
             Nenhum pedido no momento 🍨
           </div>
         `;
+
+        contador.innerText = "0 pedidos";
+        return;
       }
 
+      // CONTADOR
+      contador.innerText = pedidos.length + " pedidos";
+
+      // LOOP DOS PEDIDOS
       pedidos.forEach(pedido => {
+
+        // TENTA CONVERTER ITENS
+        let itens = [];
+
+        try {
+
+          itens = typeof pedido.itens === "string"
+            ? JSON.parse(pedido.itens)
+            : pedido.itens;
+
+        } catch (e) {
+          console.error("Erro ao converter itens:", e);
+        }
+
+        if (!Array.isArray(itens)) {
+          itens = [];
+        }
+
+        // HTML DOS ITENS
+        let htmlItens = itens.map(item => `
+          <li class="flex justify-between border-b border-pink-100 py-1">
+            <span>
+              ${item.quantidade || 1}x ${item.nome || "Produto"}
+            </span>
+
+            <span class="font-medium text-marrom">
+              R$ ${(item.preco || 0).toFixed(2)}
+            </span>
+          </li>
+        `).join("");
+
+        // DATA FORMATADA
+        let dataFormatada = "Sem data";
+
+        if (pedido.created_at) {
+
+          const data = new Date(pedido.created_at);
+
+          dataFormatada =
+            data.toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit"
+            }) +
+            " • " +
+            data.toLocaleDateString("pt-BR");
+        }
+
+        // CARD
         const card = document.createElement("div");
 
         card.className = `
-          bg-white rounded-2xl p-4 shadow-sm
+          bg-white rounded-2xl p-5 shadow-sm
           border border-pink-100
+          flex flex-col
         `;
 
         card.innerHTML = `
-          <h3 class="text-rosa font-semibold text-lg mb-2">
-            Pedido #${pedido.id}
-          </h3>
 
-          <p class="text-sm text-gray-700">
-            <strong>Cliente:</strong> ${pedido.cliente}
-          </p>
+          <!-- TOPO -->
+          <div class="flex justify-between items-start mb-3">
 
-          <p class="text-sm text-gray-700 mt-1">
-            <strong>Itens:</strong> ${pedido.itens.join(", ")}
-          </p>
+            <div>
+              <h3 class="text-rosa font-semibold text-lg">
+                Pedido #${pedido.id}
+              </h3>
+
+              <p class="text-xs text-gray-500 mt-1">
+                ${dataFormatada}
+              </p>
+            </div>
+
+            <span class="bg-pink-100 text-rosa text-xs px-2 py-1 rounded-full">
+              ${pedido.status || "Pendente"}
+            </span>
+
+          </div>
+
+
+          <!-- CLIENTE -->
+          <div class="bg-pink-50 rounded-xl p-3 mb-4">
+
+            <p class="text-sm text-gray-700">
+              <strong>Cliente:</strong>
+              ${pedido.cliente_nome || pedido.cliente || "Não informado"}
+            </p>
+
+            <p class="text-sm text-gray-700 mt-1">
+              <strong>Endereço:</strong>
+              ${pedido.cliente_endereco || "Não informado"}
+            </p>
+
+          </div>
+
+
+          <!-- ITENS -->
+          <div class="flex-grow">
+
+            <h4 class="text-sm font-semibold text-marrom mb-2">
+              Itens do pedido
+            </h4>
+
+            <ul class="text-sm text-gray-700 space-y-1">
+              ${htmlItens}
+            </ul>
+
+          </div>
+
+
+          <!-- TOTAL -->
+          <div class="border-t border-pink-100 mt-4 pt-4 flex justify-between items-center">
+
+            <div>
+              <p class="text-xs text-gray-500">
+                Total
+              </p>
+
+              <p class="text-lg font-bold text-marrom">
+                R$ ${(pedido.total || 0).toFixed(2)}
+              </p>
+            </div>
+
+            <button
+              onclick="concluirPedido(this)"
+              class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full transition">
+              Pronto ✓
+            </button>
+
+          </div>
         `;
 
         container.appendChild(card);
       });
-
-      contador.innerText = pedidos.length + " pedidos";
     }
 
-    // MOCK (sem pedidos)
-    function mockPedidos() {
-      return [];
-    }
 
-    window.onload = () => {
-      renderPedidos(mockPedidos());
-    };
-
+    // =========================
+    // CARREGAR PEDIDOS DA API
+    // =========================
     async function carregarPedidos() {
+
       try {
-        const response = await fetch("https://sua-api.com/pedidos");
+
+        // STATUS CARREGANDO
+        const dot = document.getElementById("statusDot");
+        const text = document.getElementById("statusText");
+
+        dot.classList.remove("bg-red-400");
+        dot.classList.add("bg-yellow-400");
+
+        text.innerText = "Atualizando...";
+
+        // FETCH API
+        const response = await fetch(URL_API);
+
+        if (!response.ok) {
+          throw new Error("Erro ao buscar pedidos");
+        }
+
         const pedidos = await response.json();
+
         renderPedidos(pedidos);
-      } catch {
+
+        // STATUS ONLINE
+        dot.classList.remove("bg-yellow-400");
+        dot.classList.add("bg-green-400");
+
+        text.innerText = "Online";
+
+      } catch (erro) {
+
+        console.error("Erro ao carregar pedidos:", erro);
+
         renderPedidos([]);
+
+        // STATUS OFFLINE
+        const dot = document.getElementById("statusDot");
+        const text = document.getElementById("statusText");
+
+        dot.classList.remove("bg-yellow-400");
+        dot.classList.add("bg-red-400");
+
+        text.innerText = "Offline";
       }
     }
 
+
+    // =========================
+    // CONCLUIR PEDIDO
+    // =========================
+    function concluirPedido(btn) {
+
+      const card = btn.closest(".bg-white");
+
+      card.classList.add(
+        "opacity-50",
+        "pointer-events-none"
+      );
+
+      btn.innerText = "Finalizado";
+
+      btn.classList.remove(
+        "bg-green-500",
+        "hover:bg-green-600"
+      );
+
+      btn.classList.add("bg-gray-400");
+    }
+
+
+    // =========================
     // ONLINE / OFFLINE
+    // =========================
     let online = false;
 
     function toggleStatus() {
+
       online = !online;
 
       const dot = document.getElementById("statusDot");
@@ -169,24 +355,44 @@
       const btn = document.getElementById("statusBtn");
 
       if (online) {
+
         dot.classList.remove("bg-red-400");
         dot.classList.add("bg-green-400");
 
         text.innerText = "Online";
+
         btn.innerText = "Ficar Offline";
+
         btn.classList.remove("bg-gray-400");
         btn.classList.add("bg-green-500");
+
       } else {
+
         dot.classList.remove("bg-green-400");
         dot.classList.add("bg-red-400");
 
         text.innerText = "Offline";
+
         btn.innerText = "Ficar Online";
+
         btn.classList.remove("bg-green-500");
         btn.classList.add("bg-gray-400");
       }
     }
-  </script>
+
+
+    // =========================
+    // INICIAR
+    // =========================
+    window.onload = () => {
+
+      carregarPedidos();
+
+      // Atualiza automaticamente
+      setInterval(carregarPedidos, 10000);
+    };
+
+  </script>xc 
 
 </body>
 </html>
